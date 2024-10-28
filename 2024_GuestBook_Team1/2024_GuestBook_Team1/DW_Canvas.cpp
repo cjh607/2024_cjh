@@ -72,7 +72,8 @@ LRESULT DW_Canvas::HandleMessage(HWND cWnd, UINT message, WPARAM wParam, LPARAM 
         drawPInfo.lParam = lParam;
         drawPInfo.pColor = ColorPalette::colorArr[Function::penNum];
         drawPInfo.pTime = (DWORD)GetTickCount64();
-        drawPInfo.pWidth = penThickness->getPenWidth(); /// Ææ ±½±â ¼³Á¤
+        //drawPInfo.pWidth = penThickness->getPenWidth(); /// Ææ ±½±â ¼³Á¤
+        drawPInfo.pWidth = 8; /// Ææ ±½±â ¼³Á¤
         drawPInfo.state = message;
         function->draw(cWnd, drawPInfo, TRUE); // ºê·¯½¬ ±â´É Ãß°¡ÇÏ·Á¸é ÇØ´ç RECTANGLE ¿¡ ¾Ë¸Â´Â º¯¼ö¸¦ ³ÖÀ¸¸é µÊ.
         break;
@@ -83,7 +84,8 @@ LRESULT DW_Canvas::HandleMessage(HWND cWnd, UINT message, WPARAM wParam, LPARAM 
         drawPInfo.lParam = lParam;
         drawPInfo.pColor = ColorPalette::colorArr[Function::penNum];
         drawPInfo.pTime = (DWORD)GetTickCount64();
-        drawPInfo.pWidth = penThickness->getPenWidth(); /// Ææ ±½±â ¼³Á¤
+        //drawPInfo.pWidth = penThickness->getPenWidth(); /// Ææ ±½±â ¼³Á¤
+        drawPInfo.pWidth = 8; /// Ææ ±½±â ¼³Á¤
         drawPInfo.state = message;
         function->mouseUD(drawPInfo, TRUE);
 
