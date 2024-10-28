@@ -350,7 +350,7 @@ void Function::paint(HWND hWnd, RECT canvasRT)
 	Rectangle(cHdc, canvasRT.left, canvasRT.top, canvasRT.right, canvasRT.bottom);
 	SelectObject(cHdc, CanvasPen);
 	DeleteObject(CanvasPen);
-
+	
 	if (!getIsReplay())
 	{
 		for (const auto& record : getDrawLInfo().pInfo)
