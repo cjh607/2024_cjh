@@ -1,55 +1,70 @@
-
-
-
 #include "DrowWindow.h"
+
 
 DrowWindow::DrowWindow(HINSTANCE hInstance)
     :ChildWindow(RGB(249, 243, 240))
 {
     dInst = hInstance;
-    DrowRT = { 0 };
+    drowRT = { 0 };
     dWnd = nullptr;
-    ToolCnt = TRUE;
+    toolCnt = TRUE;
 
-    SideMenu = nullptr;
-    s_hWnd = nullptr;
+    sideMenu = nullptr;
+    sHWnd = nullptr;
     pt = { 0 };
-    DesktopRT = { 0 };
+    desktopRT = { 0 };
 }
 
+//DrowWindow::colWnd = nullptr;
 
-void DrowWindow::Create(HWND hParentWnd, int x, int y, int width, int height) 
+void DrowWindow::Create(HWND hParentWnd, int x, int y, int width, int height)
 {
-	ChildWindow::Create(hParentWnd, L"BlueWindowClass", L"Blue Child Window", x, y, width, height);
-	dWnd = cWnd;
+    ChildWindow::Create(hParentWnd, L"DrowWindow", L"DrowWindow", x, y, width, height);
+    dWnd = cWnd;
 
-    GetWindowRect(GetDesktopWindow(), &DesktopRT);
+    desktopRT = { 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
     GetWindowRect(GetParent(dWnd), &MainRT);
 
-    DrowRT = ChildWindow::GetRT();
+    drowRT = ChildWindow::GetRT();
 
-    NameBar = new DW_NameBar(dInst);
-    NameBar->Create(dWnd, 0, 0, DrowRT.right, 52);
-    n_hWnd = NameBar->GetHWND();
+    nameBar = make_unique<DW_NameBar>(dInst);
+    nameBar->Create(dWnd, 0, 0, drowRT.right, 57);
+    nHWnd = nameBar->GetHWND();
 
-    ToolMenu = new DW_ToolMenu(dInst);
-    ToolMenu->Create(dWnd, -1, 52, DrowRT.right, 46);
-    //ToolMenu->Show(true);
-    t_hWnd = ToolMenu->GetHWND();
-    ToolCnt = TRUE;
-    ToolMenu->tCnt = &ToolCnt;
-    NameBar->tCnt = &ToolCnt;
+    toolMenu = make_unique<DW_ToolMenu>(dInst);
+    toolMenu->Create(dWnd, -1, 57, drowRT.right, 51);
+    //toolMenu->show(true);
+    tHWnd = toolMenu->GetHWND();
+    toolCnt = TRUE;
+    toolMenu->tCnt = &toolCnt;
+    nameBar->tCnt = &toolCnt;
 
-    Canvas = new DW_Canvas(dInst);
-    Canvas->Create(dWnd, (DrowRT.right - 1300) / 2, (DrowRT.bottom - 750) / 2 + 75, 1300, 700);
-    C_hWnd = Canvas->GetHWND();
+    canvas = make_unique<DW_Canvas>(dInst);
+    canvas->Create(dWnd, (drowRT.right - 1300) / 2, (drowRT.bottom - 750) / 2 + 75, 1300, 700);
+    cHWnd = canvas->GetHWND();
 
 
-    SideMenu = new DW_SideMenu(dInst);
-    SideMenu->CreatePop(dWnd, MainRT.right - 350, MainRT.top, 350, 600);
-    s_hWnd = SideMenu->GetHWND();
+    sideMenu = make_unique<DW_SideMenu>(dInst);
+    sideMenu->CreatePop(dWnd, MainRT.right - 350, MainRT.top, 350, 600);
+    sHWnd = sideMenu->GetHWND();
 
-    SideMenu->Show(FALSE);
+    sideMenu->Show(FALSE);
+
+    colorbox = make_unique<DW_ColorBox>(dInst);
+    colorbox->CreatePop(dWnd, 300,100, 300, 400);
+    bHWnd = colorbox->GetHWND();
+
+    colorbox->Show(FALSE);
+
+    connExcel = make_unique<ConnExcel>();
+
+    connExcel->listScrollThread(dWnd, getDWWidth(), drowRT);
+
+    ConnExcel::list = connExcel->getVisitList().c_str();
+
+    connExcel->setTextPosX(drowRT.right);
+
+    
 
 }
 
@@ -60,25 +75,16 @@ LRESULT DrowWindow::HandleMessage(HWND dWnd, UINT message, WPARAM wParam, LPARAM
     {
 
     case WM_SIZE:
-        DrowRT = GetRT();
-        
-        /*SetWindowPos(n_hWnd, HWND_BOTTOM, 0, 0, DrowRT.right, 52, NULL);
+        drowRT = GetRT();
 
-        SetWindowPos(t_hWnd, HWND_BOTTOM, -1, 52, DrowRT.right, 98, NULL);
 
-        SetWindowPos(C_hWnd, HWND_BOTTOM, (DrowRT.right - 1300) / 2, (DrowRT.bottom - 750) / 2 + 75,
-            (DrowRT.right + 1300) / 2, (DrowRT.bottom + 750) / 2 + 75, NULL);
+        MoveWindow(nHWnd, 0, 0, drowRT.right, 57, TRUE);
 
-        SetWindowPos(s_hWnd, HWND_TOPMOST, DrowRT.right - 350, 0, DrowRT.right, 600, NULL);*/
+        MoveWindow(tHWnd, -1, 57, drowRT.right, 51, TRUE);
 
-        //InvalidateRect(dWnd, nullptr, true);
+        MoveWindow(cHWnd, (drowRT.right - 1300) / 2, (drowRT.bottom - 750) / 2 + 75, 1300, 700, TRUE);
 
-        MoveWindow(n_hWnd, 0, 0, DrowRT.right, 52,TRUE);
-
-        MoveWindow(t_hWnd, -1, 52, DrowRT.right, 46, TRUE);
-
-        MoveWindow(C_hWnd, (DrowRT.right - 1300) / 2, (DrowRT.bottom - 750) / 2 + 75, 1300, 700, TRUE);
-
+        //MoveWindow(bHWnd, (drowRT.right / 2) - 50, 70, 300, 400, TRUE);
 
         InvalidateRect(dWnd, nullptr, true);
 
@@ -89,8 +95,13 @@ LRESULT DrowWindow::HandleMessage(HWND dWnd, UINT message, WPARAM wParam, LPARAM
 
         break;
 
+    case WM_SETTEXT:
+        /// save나 로드시 namebar 텍스트 변경
+        SendMessage(nHWnd, WM_SETTEXT, 0, (LPARAM)FileManager::baseName.c_str());       /// DW_NameBar로 메시지 전달
+        break;
+
     case WM_COMMAND:
-        DrowRT = GetRT();
+        drowRT = GetRT();
         switch (LOWORD(wParam))
         {
         case NB_BACK_BT:
@@ -102,31 +113,42 @@ LRESULT DrowWindow::HandleMessage(HWND dWnd, UINT message, WPARAM wParam, LPARAM
             break;
 
         case NB_SIDE_BT:
-            /*POINT pt;
+            GetClientRect(dWnd, &drowRT);
+            pt = { 0 };
             ClientToScreen(dWnd, &pt);
-            MoveWindow(s_hWnd,DrowRT.left-300,DrowRT.top)*/
-            SideMenu->Show(true);
-            SetFocus(s_hWnd);
-            InvalidateRect(dWnd, NULL, true);
-            InvalidateRect(s_hWnd, NULL, true);
+            IntersectRect(&drowRT, &desktopRT, &drowRT);
+
+            DSideRT = GetChildPos(dWnd, sHWnd);
+
+            MoveWindow(sHWnd, pt.x + drowRT.right - 351, pt.y + drowRT.top, 350, 600, true);
+            sideMenu->Show(true);
+            break;
+
+        case TL_PLAY_BT:
+            /// 로드시 리플레이 기능
+            SendMessage(tHWnd, WM_COMMAND, TL_PLAY_BT, 0);          /// DW_SideMenu로 메시지 전달
             break;
 
         default:
             break;
         }
-        
+
         break;
 
     case WM_LBUTTONDOWN:
-        DrowRT = GetRT();
-        
+        drowRT = GetRT();
+
 
         break;
 
     case WM_PAINT:
-        DrowRT = ChildWindow::GetRT();
+        drowRT = ChildWindow::GetRT();
         pHdc = BeginPaint(dWnd, &d_ps);
-        RECT ToolRT = this->GetChildPos(dWnd, t_hWnd);
+        SIZE textSize;
+        wsprintf(text, ConnExcel::list.c_str());
+        SetBkColor(pHdc, RGB(249, 243, 240));
+        TextOut(pHdc, connExcel->getTextPosX(), drowRT.bottom - 15, text, lstrlen(text));
+
         EndPaint(dWnd, &d_ps);
         break;
 
@@ -134,4 +156,31 @@ LRESULT DrowWindow::HandleMessage(HWND dWnd, UINT message, WPARAM wParam, LPARAM
         return ChildWindow::HandleMessage(dWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+int DrowWindow::getDWWidth()
+{
+    return drowRT.right - drowRT.left;
+}
+
+void DrowWindow::colorPickerCreate(int colorNum)
+{
+    //int x, y, width, hight;
+    switch(colorNum){
+    case 0:
+        
+        break;
+    case 1:
+
+        break;
+    case 2:
+
+        break;
+    }
+    //DrowWindow::colWnd = CreateWindowEx(WS_EX_TOOLWINDOW, L"DrowWindow", L"DrowWindow", WS_POPUP | WS_VISIBLE | WS_CAPTION ,x,y,width,hight,dWnd,NULL,nullptr,NULL);
+}
+
+void DrowWindow::colorPickerDestroy()
+{
+    //DestroyWindow(colWnd);
 }

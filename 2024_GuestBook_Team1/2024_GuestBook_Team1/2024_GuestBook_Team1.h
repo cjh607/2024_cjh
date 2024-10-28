@@ -16,6 +16,8 @@
 #include "Function.h"
 #include "ColorPalette.h"
 #include "Struct.h"
-
+#include "PenThickness.h"
+#include "Stamp.h"
+#include "Pen_Str.h"
 
 #endif

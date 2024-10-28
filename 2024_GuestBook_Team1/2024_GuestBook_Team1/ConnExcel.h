@@ -4,44 +4,52 @@
 */
 
 #pragma once
-#pragma comment(lib, "Ole32.lib")
 
 #include <Windows.h>
-#include <ole2.h>
+#include <iostream>
+#include <codecvt>
+#include <locale>
+#include <string>
+#include <fstream>
 #include <comdef.h>
 #include <tchar.h>
-#include <iostream>
+#include <thread>
+#include <algorithm>
 
-using namespace std;
+#include "Resource.h"
+
 
 class ConnExcel
 {
 public:
-	ConnExcel();
-	~ConnExcel();
 
-	void insertExcel(const wchar_t*, const wchar_t*);
+    void insertExcel(const std::wstring);
+    std::wstring getVisitList();
+    void listScroll(HWND, int, RECT);
+
+    int getTextSize(HWND, std::wstring);
+    void listScrollThread(HWND, int, RECT);
+
+    int getTextPosX();
+    void setTextPosX(int);
+
+
+    static std::wstring list;
 
 private:
-	CLSID clsid;
-	HRESULT hr;
+    std::wstring uniVisit;
+    std::string multiVisit;
 
-	DISPID dispID;
+    std::string wcharToChar(const std::wstring);
+    std::wstring charToWchar(const std::string);
 
-	IDispatch* appInst = NULL;
-	IDispatch* pWorkBooks = NULL;
-	IDispatch* pExcel = NULL;
-	IDispatch* pSheets = NULL;
-	IDispatch* pSheet = NULL;
-	IDispatch* pCells = NULL;
-	IDispatch* pRange = NULL;
+    std::thread listScrollThreadHandle;
 
-	const OLECHAR* szVisible = L"Visible";
-	const OLECHAR* szWorkbooks = L"WorkBooks";
-	const OLECHAR* szOpen = L"Open";
-	const OLECHAR* szSheets = L"Sheets";
-	const OLECHAR* szItem = L"Item";
-	const OLECHAR* szCells = L"Cells";
-	const OLECHAR* szSave = L"SAVE";
+    WCHAR text[10000];
+    int textPosX;
+    int textWidth = 0;
+
+
+    bool isListRunning = true;
+
 };
-

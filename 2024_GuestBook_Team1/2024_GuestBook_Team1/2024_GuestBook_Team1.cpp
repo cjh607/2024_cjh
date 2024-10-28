@@ -1,13 +1,7 @@
-﻿/**
-@author 김형균
-@date 2024.08.01
-    기본 그리기 코드 추가
-    그린 내용 유지 코드 추가
-@todo 그린 내용 replay 구현
-**/
-
-#include "2024_GuestBook_Team1.h"
+﻿#include "2024_GuestBook_Team1.h"
 #include "Resource.h"
+#include "PenThickness.h"
+#include <commctrl.h>
 
 
 #define MAX_LOADSTRING 100
@@ -153,13 +147,12 @@ LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static HWND SideMenu = NULL;
     static DrowWindow* dWindow = nullptr;
     static HWND d_hWnd = nullptr;
-    static HWND b_hWnd = nullptr;
 
     switch (message)
     {
     case WM_CREATE:
 
-        //fileManager->getInstance().InitializePanels(hWnd);
+       
 
         GetClientRect(hWnd, &MainRT);
 
@@ -176,6 +169,7 @@ LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         dWindow->Show(FALSE);
         d_hWnd = dWindow->GetHWND();
 
+
         break;
 
     case WM_COMMAND:
@@ -187,7 +181,7 @@ LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case DEF_DROW_BT:
             EnableWindow(d_hWnd, true);
-            dWindow->ToolCnt = true;
+            dWindow->toolCnt = true;
             dWindow->Show(true);
             EnableWindow(DrowBT, FALSE);
             EnableWindow(LoadBT, FALSE);
@@ -197,7 +191,7 @@ LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         case DEF_LOAD_BT:
             EnableWindow(d_hWnd, true);
-            dWindow->ToolCnt = FALSE;
+            dWindow->toolCnt = FALSE;
             dWindow->Show(true);
             EnableWindow(DrowBT, FALSE);
             EnableWindow(LoadBT, FALSE);
@@ -220,6 +214,11 @@ LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             DestroyWindow(hWnd);
             break;
 
+        case TL_PLAY_BT:
+            /// 로드시 리플레이 기능
+            SendMessage(d_hWnd, WM_COMMAND, TL_PLAY_BT, 0);      /// DrowWindow로 메시지 전달
+            break;
+
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
@@ -227,7 +226,7 @@ LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
 
     case WM_SIZE:
-        //fileManager->getInstance().ResizePanels(hWnd, lParam);  /*패널 크기 조정 함수 호출*/
+        
         GetClientRect(hWnd, &MainRT);
 
         MoveWindow(DrowBT, (MainRT.right / 2) - 120, (MainRT.bottom / 2) - 170, 240, 100, TRUE);
@@ -245,12 +244,20 @@ LRESULT WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
         GetClientRect(hWnd, &MainRT);
 
+
+        DeleteObject(hbr);
         EndPaint(hWnd, &ps);
     }
     break;
+    case WM_SETTEXT:
+        /// save나 로드시 namebar 텍스트 변경
+        SendMessage(d_hWnd, WM_SETTEXT, 0, (LPARAM)FileManager::baseName.c_str());      /// DrowWindow.cpp로 메시지 전달
+        break;
+
     case WM_DESTROY:
+        FileManager::fileManager.SaveFileList();
         PostQuitMessage(0);
-        //function->GDIPlusEnd();
+        /// function->GDIPlusEnd();
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
