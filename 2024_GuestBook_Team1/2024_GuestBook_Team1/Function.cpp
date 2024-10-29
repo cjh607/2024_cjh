@@ -43,14 +43,18 @@ void Function::draw(HWND hWnd, PINFO dInfo, bool isRecord) // 뒤에 브러쉬 추가
 	if (isLeftClick)
 	{
 		px = LOWORD(dInfo.lParam); // 그리기 시작한 좌표
-		py = HIWORD(dInfo.lParam);
-
+		py = HIWORD(dInfo.lParam);			
+		
 		currentTime = std::chrono::steady_clock::now(); // 그리기 시간 저장
 
 		setPenStyle(dInfo, dInfo.pColor);
 
 		MoveToEx(hdc, x, y, NULL);
 		LineTo(hdc, px, py);
+		binfo DRAW;
+		DRAW.current = currentThickness;
+		BINFO.push_back(DRAW);
+
 		SelectObject(hdc,oPen); //객체 해제
 		DeleteObject(nPen); //객체 삭제
 
@@ -350,16 +354,23 @@ void Function::setPenStyle(PINFO dinfo, COLORREF col)
 void Function::paint(HWND hWnd, RECT canvasRT)
 {
 	cHdc = BeginPaint(hWnd, &cPS);
-	CanvasPen = (HPEN)SelectObject(cHdc, CreatePen(PS_SOLID, 1, RGB(234, 234, 234)));
-	Rectangle(cHdc, canvasRT.left, canvasRT.top, canvasRT.right, canvasRT.bottom);
-	SelectObject(cHdc, CanvasPen);
-	DeleteObject(CanvasPen);
 	
 	if (!getIsReplay())
-	{
+	{		
+		if(this->bShape==BRUSH){			
+		for (size_t i = 1; i < BINFO.size(); ++i) {			
+			HPEN bpen = CreatePen(PS_SOLID, BINFO[i].current, RGB(0, 0, 0));
+			HPEN bbpen = (HPEN)SelectObject(hdc, bpen);			
+			}
+		}
+
+		
+		
 		for (const auto& record : getDrawLInfo().pInfo)
 		{
-			setBShape(record.bShape);
+			if (record.bShape != BRUSH)
+				setBShape(record.bShape);
+			else setBShape(BASIC);
 
 			switch (record.state)
 			{
@@ -377,7 +388,9 @@ void Function::paint(HWND hWnd, RECT canvasRT)
 			default:
 				break;
 			}
+			
 		}
+	
 	}
 
 	EndPaint(hWnd, &cPS);
