@@ -1,13 +1,11 @@
 /**
 @author 조재현
-@date 2024.10.28
-	----------수정 된 거 --------------
-	스프레이 기능 수정 - 기본크기 키우고, 크기에 따라 스프레이 뿌려지는 밀도 수정
-	연필 기능 수정 - 연필 크기 수정
-	붓 브러쉬 기능 수정 - 굵기에 따라 빠르게 그릴 수록 얆아지게, 붓 브러쉬 전용 최소 굵기 설정함.
-	----------수정 해야 할거 -----------
-	창 조절 시 버벅 거리는거
-	창 조절 시 붓 브러쉬 기능 사라지는거
+@date 2024.10.29
+	----------수정 된 거 --------------	
+	창 조절 시 붓 브러쉬 기능 사라지는거 -> 붓 굵기 값을 백터로 저장 후 다시 그림.
+	----------수정 해야 할거 -----------	
+	창 조절 시 버벅 거리는거 -> 다시 그리는 것 이 아닌 [그린 정보를 그대로 복붙 하기]
+	붓 브러쉬 사용 -> 다른 브러쉬(spray) 사용 -> 붓 브러쉬 사용 -> 창 조절 -> 붓 브러쉬 가 spray로 변경
 **/
 #include "Function.h"
 
@@ -51,9 +49,7 @@ void Function::draw(HWND hWnd, PINFO dInfo, bool isRecord) // 뒤에 브러쉬 추가
 
 		MoveToEx(hdc, x, y, NULL);
 		LineTo(hdc, px, py);
-		binfo DRAW;
-		DRAW.current = currentThickness;
-		BINFO.push_back(DRAW);
+		
 
 		SelectObject(hdc,oPen); //객체 해제
 		DeleteObject(nPen); //객체 삭제
@@ -357,14 +353,6 @@ void Function::paint(HWND hWnd, RECT canvasRT)
 	
 	if (!getIsReplay())
 	{		
-		if(this->bShape==BRUSH){			
-		for (size_t i = 1; i < BINFO.size(); ++i) {			
-			HPEN bpen = CreatePen(PS_SOLID, BINFO[i].current, RGB(0, 0, 0));
-			HPEN bbpen = (HPEN)SelectObject(hdc, bpen);			
-			}
-		}
-
-		
 		
 		for (const auto& record : getDrawLInfo().pInfo)
 		{

@@ -36,11 +36,7 @@ private:
 	int currentThickness = 0; // 붓 브러쉬 크기가 바뀌는 변수 (초기화 할려고 0 집어넣음)
 	//여기까지 브러쉬 변수 추가
 
-	struct binfo
-	{
-		int current;		
-	};
-	std::vector<binfo> BINFO;
+
 
 	static int bShape; // 브러쉬 종류 버튼 없어서 해당 코드에다 변수 넣어서 사용.
 	int spray_pixel; // 스프레이 픽셀 퍼지는 값 수정 - 펜 굵기에 따라 뿌려지는 픽셀 조정하려고 만든 변수
