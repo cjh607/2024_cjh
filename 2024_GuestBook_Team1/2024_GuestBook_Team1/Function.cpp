@@ -356,19 +356,25 @@ void Function::paint(HWND hWnd, RECT canvasRT)
 		
 		for (const auto& record : getDrawLInfo().pInfo)
 		{
-			if (record.bShape != BRUSH)
-				setBShape(record.bShape);
-			else setBShape(BASIC);
+			if (record.bShape != BRUSH) //붓 브러쉬가 선택 안 됐을 때
+				setBShape(record.bShape); // 선택한 팬 으로 팬 그리기
+			else setBShape(BASIC); // 붓 브러쉬가 선택 되면 BASIC 팬으로 그리기 
+								   // -> 이러면 붓 선택하고 창 조절시 bShape 가 BASIC 팬으로 설정됨
 
 			switch (record.state)
 			{
 			case WM_LBUTTONDOWN:
+				mouseUD(record, FALSE);
 			case WM_LBUTTONUP:
 				mouseUD(record, FALSE);
+				if (record.bShape == BRUSH) // 위 문제를 해결하기 위한 if문
+					bShape = BRUSH; // record.bShape는 팬 스타일을 저장하고 있고 이 변수는 전역변수인 bShape랑 별개로 저장됨.
+									// 이를 해결 하려면 다시 그릴 때 BRUSH 팬을 다시 선택해야됨.
+									// LBUTTONUP -> paint가 다시 그려주고 끝나는 지점 -> 사용자가 다시 그릴 수 있는 순간 -> 이때 변수를 변경
 				break;
 
-			case WM_MOUSEMOVE:
-				draw(hWnd, record, FALSE);
+			case WM_MOUSEMOVE:				
+				draw(hWnd, record, FALSE);					
 				break;
 
 			
