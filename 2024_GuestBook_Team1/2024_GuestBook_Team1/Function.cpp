@@ -393,7 +393,7 @@ void Function::paint(HWND hWnd, RECT canvasRT)
 		}
 	}
 
-	// 메모리 DC의 내용을 실제 화면에 복사d
+	// 메모리 DC의 내용을 실제 화면에 복사
 
 	BitBlt(cHdc, 0, 0, canvasRT.right, canvasRT.bottom, memDC, 0, 0, SRCCOPY);
 	// 메모리 DC와 비트맵 삭제
