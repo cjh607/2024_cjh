@@ -2,28 +2,28 @@
 
 #include <thread>
 #include "Struct.h"
-
+#include "WndFunc.h"
 #include "Resource.h"
-
 #include <gdiplus.h> //gdi+ 기능을 사용하기 위한 헤더파일.
 #pragma comment (lib, "gdiplus.lib") // GDI+ 라이브러리 링크
 #include <cmath> // sqrt(제곱 근) 사용을 위한 추가
 #include <chrono> // 붓 브러쉬 사용을 위한 시간 관련 라이브 러리
-
-using namespace std;
 
 class Function
 {
 
 private:
 
-	HDC hdc;
+	HDC hdc, memDC = NULL;
 	HPEN nPen, oPen;
 	HBRUSH hPen;
+	RECT clientRect;
+	HBITMAP hBitmap = NULL;
 
 	int px, py;
 	int px2, py2;
-	int x, y;
+	int x, y, x2, y2;
+	int px3, py3;
 
 	// 붓 브러쉬 변수 
 	std::chrono::steady_clock::time_point DrawTime; // 좌클릭 한 시간
@@ -36,10 +36,7 @@ private:
 	int currentThickness = 0; // 붓 브러쉬 크기가 바뀌는 변수 (초기화 할려고 0 집어넣음)
 	//여기까지 브러쉬 변수 추가
 
-
-
 	static int bShape; // 브러쉬 종류 버튼 없어서 해당 코드에다 변수 넣어서 사용.
-	int spray_pixel; // 스프레이 픽셀 퍼지는 값 수정 - 펜 굵기에 따라 뿌려지는 픽셀 조정하려고 만든 변수
 
 	bool isLeftClick = false;
 	bool isReplay = false;
@@ -54,9 +51,11 @@ private:
 	HPEN CanvasPen = nullptr;
 	PAINTSTRUCT cPS = { 0 };
 
-public:
-	thread replayThreadHandle;
+	std::thread replayThreadHandle;
 	HANDLE threadHandle;
+public:
+	void setisLeftClick(bool);
+	bool getisLeftClick();
 
 	void draw(HWND, PINFO, bool);		//뒤에 브러쉬 추가
 	void mouseUD(PINFO, bool);
@@ -85,7 +84,7 @@ public:
 
 	void paint(HWND, RECT);
 
-	
+	void re_draw(HWND hWnd, PINFO dInfo, bool isRecord);
 
 	LINFO getDrawLInfo();
 

@@ -1,15 +1,4 @@
-/**
-@author 조재현
-@date 2024.10.30
-	----------수정 된 거 --------------	
-	붓 브러쉬 사용 -> 다른 브러쉬(spray) 사용 -> 붓 브러쉬 사용 -> 창 조절 -> 붓 브러쉬 가 spray로 변경
-	----------수정 해야 할거 -----------	
-	창 조절 시 버벅 거리는거 -> 다시 그리는 것 이 아닌 [그린 정보를 그대로 복붙 하기, bitmap??]	
-**/
 #include "Function.h"
-
-
-using namespace std;
 
 
 int Function::penNum = 0;
@@ -35,23 +24,20 @@ void Function::record(PINFO inputPI)
 
 void Function::draw(HWND hWnd, PINFO dInfo, bool isRecord) // 뒤에 브러쉬 추가
 {
-
 	hdc = GetDC(hWnd);
+
 	if (isLeftClick)
 	{
 		px = LOWORD(dInfo.lParam); // 그리기 시작한 좌표
-		py = HIWORD(dInfo.lParam);			
-		
+		py = HIWORD(dInfo.lParam);
+
 		currentTime = std::chrono::steady_clock::now(); // 그리기 시간 저장
 
 		setPenStyle(dInfo, dInfo.pColor);
-
 		MoveToEx(hdc, x, y, NULL);
 		LineTo(hdc, px, py);
-		
 
-		SelectObject(hdc,oPen); //객체 해제
-		DeleteObject(nPen); //객체 삭제
+		DeleteObject(nPen);
 
 		x = px;
 		y = py;
@@ -65,6 +51,37 @@ void Function::draw(HWND hWnd, PINFO dInfo, bool isRecord) // 뒤에 브러쉬 추가
 	ReleaseDC(hWnd, hdc);
 
 }
+
+void Function::re_draw(HWND hWnd, PINFO dInfo, bool isRecord) // 뒤에 브러쉬 추가
+{
+	hdc = memDC;
+
+	if (isLeftClick)
+	{
+		x2 = LOWORD(dInfo.lParam); // 그리기 시작한 좌표
+		y2 = HIWORD(dInfo.lParam);
+
+		currentTime = std::chrono::steady_clock::now(); // 그리기 시간 저장
+
+		setPenStyle(dInfo, dInfo.pColor);
+		MoveToEx(hdc, x2, y2, NULL);
+		LineTo(hdc, px3, py3);
+
+		DeleteObject(nPen);
+
+		px3 = x2;
+		py3 = y2;
+
+		DrawTime = currentTime; // 마지막 시간 업데이트
+
+		if (isRecord)
+			record(dInfo);
+
+	}
+	ReleaseDC(hWnd, hdc);
+
+}
+
 
 void Function::mouseUD(PINFO dInfo, bool isRecord)
 {
@@ -97,36 +114,28 @@ void Function::replayThread(HWND hWnd)
 	setIsReset(false);
 
 	// std::thread를 사용하여 스레드 시작
-	replayThreadHandle = thread(&Function::replay, this, hWnd);
+	replayThreadHandle = std::thread(&Function::replay, this, WndFunc::drowWnd);
 
 	threadHandle = replayThreadHandle.native_handle();
 }
 
 
- //기본 리플레이 동작 함수
+//기본 리플레이 동작 함수
 void Function::replay(HWND hWnd)
 {
-	// 화면 초기화
-	HDC hdc, memDC;
-	HBITMAP hBitmap;
-	RECT clientRect;
+
 	GetClientRect(hWnd, &clientRect);  // 클라이언트 영역 크기 얻기
 
 	while (isReplay)
 	{
-		InvalidateRect(hWnd, NULL, TRUE);
+		// 화면 초기화
+		InvalidateRect(hWnd, NULL, FALSE);
 		UpdateWindow(hWnd);
 
 		// 화면 DC 가져오기
 		hdc = GetDC(hWnd);
 
-		// 메모리 DC 생성 및 호환 비트맵 할당
-		memDC = CreateCompatibleDC(hdc);
-		hBitmap = CreateCompatibleBitmap(hdc, clientRect.right, clientRect.bottom);
-		SelectObject(memDC, hBitmap);
 
-		// 메모리 DC에서 배경 지우기
-		FillRect(memDC, &clientRect, (HBRUSH)(COLOR_WINDOW + 1));
 
 		// 그리기 작업 메모리 DC에서 수행
 		for (size_t i = 0; i < drawLInfo.pInfo.size(); i++)
@@ -150,13 +159,14 @@ void Function::replay(HWND hWnd)
 				break;
 
 			case WM_MOUSEMOVE:
-				draw(hWnd, replayInfo, false);
+				draw(WndFunc::canvasWnd, replayInfo, false);
+				re_draw(WndFunc::canvasWnd, replayInfo, false);
 				break;
 
 			case WM_LBUTTONUP:
 				mouseUD(replayInfo, false);
 				break;
-				
+
 			default:
 				break;
 			}
@@ -169,19 +179,11 @@ void Function::replay(HWND hWnd)
 
 			DeleteObject(nPen);
 		}
-
-		// 메모리 DC의 내용을 실제 화면에 복사
-		BitBlt(hdc, 0, 0, clientRect.right, clientRect.bottom, memDC, 0, 0, SRCCOPY);
-
-		// 메모리 DC와 비트맵 삭제
-		DeleteObject(hBitmap);
-		DeleteDC(memDC);
-
 		ReleaseDC(hWnd, hdc);
-
 		// 반복 간격 조절
 		Sleep(500);
 	}
+
 }
 
 
@@ -192,13 +194,13 @@ void Function::reDrawing(HWND hWnd)
 	{
 		isReplay = false;
 		ResumeThread(threadHandle);
-		stopReplay(hWnd);
+		stopReplay(WndFunc::drowWnd);
 	}
 
 	InvalidateRect(hWnd, NULL, TRUE);
 	UpdateWindow(hWnd);
 
-	
+	//MessageBox(hWnd, L"reDrawing", L"dd", MB_OK);
 }
 
 void Function::clearDrawing(HWND hWnd)
@@ -207,7 +209,7 @@ void Function::clearDrawing(HWND hWnd)
 	{
 		isReplay = false;
 		ResumeThread(threadHandle);
-		stopReplay(hWnd);
+		stopReplay(WndFunc::drowWnd);
 	}
 
 	// 기록 삭제
@@ -215,7 +217,7 @@ void Function::clearDrawing(HWND hWnd)
 
 	// 화면 초기화
 	InvalidateRect(hWnd, NULL, TRUE);
-	UpdateWindow(hWnd);	
+	UpdateWindow(hWnd);
 }
 
 void Function::setPenStyle(PINFO dinfo, COLORREF col)
@@ -279,26 +281,27 @@ void Function::setPenStyle(PINFO dinfo, COLORREF col)
 	case PENCIL:
 	{
 		Gdiplus::Graphics graphics(hdc);
-		int alpha = 45; // 기본 투명도 설정    		
-		Gdiplus::PointF points[80]; // 도형 꼭짓점 갯수
-		for (int i = 0; i < 80; ++i)
+		int alpha = 35; // 기본 투명도 설정    		
+		Gdiplus::PointF points[60]; // 도형 꼭짓점 갯수
+		for (int i = 0; i < 60; ++i)
 		{
 			INT angle = rand() % 6 * 3.14159f * i / 80; // 꼭짓점 좌표 
-			points[i] = Gdiplus::PointF(x + dinfo.pWidth * cos(angle) * 1.2 , y + dinfo.pWidth * sin(angle) * 1.2); // 꼭짓점 설정
+			points[i] = Gdiplus::PointF(x + dinfo.pWidth * cos(angle) / 1.2, y + dinfo.pWidth * sin(angle) / 1.2); // 꼭짓점 설정
 		}
 		Gdiplus::SolidBrush brush(Gdiplus::Color(alpha, GetRValue(col), GetGValue(col), GetBValue(col)));	// 색상 설정
-		graphics.FillPolygon(&brush, points, 80); // 정형화 되지 않는 도형 그리기	
+		graphics.FillPolygon(&brush, points, 60); // 정형화 되지 않는 도형 그리기	
 		ReleaseDC(hWnd, hdc);
 		break;
 	}
 
 	case SPRAY: // 스프레이 (점을 흩뿌림)
+		int spray_pixel;
 		if (dinfo.pWidth <= 3) { spray_pixel = 70; } // 팬 굵기에 따른 점 뿌리는 밀도
-		else if (dinfo.pWidth >= 4 && dinfo.pWidth <=6) { spray_pixel = 180; }
+		else if (dinfo.pWidth >= 4 && dinfo.pWidth <= 6) { spray_pixel = 180; }
 		else if (dinfo.pWidth >= 7 && dinfo.pWidth <= 10) { spray_pixel = 290; }
 		else if (dinfo.pWidth >= 11 && dinfo.pWidth <= 14) { spray_pixel = 400; }
 		else if (dinfo.pWidth >= 15 && dinfo.pWidth <= 20) { spray_pixel = 510; }
-		for ( int i=0; i < spray_pixel; ++i)
+		for (int i = 0; i < spray_pixel; ++i)
 		{
 			int offsetX = (rand() % (dinfo.pWidth * 8)) - (dinfo.pWidth * 4);
 			int offsetY = (rand() % (dinfo.pWidth * 8)) - (dinfo.pWidth * 4);
@@ -310,7 +313,7 @@ void Function::setPenStyle(PINFO dinfo, COLORREF col)
 		ReleaseDC(hWnd, hdc);
 		break;
 
-	case MARKER:
+	case MARKER: //삭제 
 	{
 		Gdiplus::Graphics graphics(hdc);
 		Gdiplus::SolidBrush marker(Gdiplus::Color(40, GetRValue(col), GetGValue(col), GetBValue(col)));
@@ -349,43 +352,53 @@ void Function::setPenStyle(PINFO dinfo, COLORREF col)
 void Function::paint(HWND hWnd, RECT canvasRT)
 {
 	cHdc = BeginPaint(hWnd, &cPS);
-	
+
+	// 메모리 DC 생성 및 호환 비트맵 할당
+	memDC = CreateCompatibleDC(hdc);
+	hBitmap = CreateCompatibleBitmap(hdc, clientRect.right, clientRect.bottom);
+	SelectObject(memDC, hBitmap);
+	// 메모리 DC에서 배경 지우기
+	FillRect(memDC, &clientRect, (HBRUSH)(COLOR_WINDOW + 1));
+
+	CanvasPen = (HPEN)SelectObject(cHdc, CreatePen(PS_SOLID, 1, RGB(234, 234, 234)));
+	Rectangle(cHdc, canvasRT.left, canvasRT.top, canvasRT.right, canvasRT.bottom);
+	SelectObject(cHdc, CanvasPen);
+	DeleteObject(CanvasPen);
+
 	if (!getIsReplay())
-	{		
-		
+	{
 		for (const auto& record : getDrawLInfo().pInfo)
 		{
-			if (record.bShape != BRUSH) //붓 브러쉬가 선택 안 됐을 때
-				setBShape(record.bShape); // 선택한 팬 으로 팬 그리기
-			else setBShape(BASIC); // 붓 브러쉬가 선택 되면 BASIC 팬으로 그리기 
-								   // -> 이러면 붓 선택하고 창 조절시 bShape 가 BASIC 팬으로 설정됨
+			if (record.bShape != BRUSH)
+				setBShape(record.bShape);
+			else
+				setBShape(BASIC);
 
 			switch (record.state)
 			{
 			case WM_LBUTTONDOWN:
-				mouseUD(record, FALSE);
 			case WM_LBUTTONUP:
 				mouseUD(record, FALSE);
-				if (record.bShape == BRUSH) // 위 문제를 해결하기 위한 if문
-					bShape = BRUSH; // record.bShape는 팬 스타일을 저장하고 있고 이 변수는 전역변수인 bShape랑 별개로 저장됨.
-									// 이를 해결 하려면 다시 그릴 때 BRUSH 팬을 다시 선택해야됨.
-									// LBUTTONUP -> paint가 다시 그려주고 끝나는 지점 -> 사용자가 다시 그릴 수 있는 순간 -> 이때 변수를 변경
 				break;
 
-			case WM_MOUSEMOVE:				
-				draw(hWnd, record, FALSE);					
+			case WM_MOUSEMOVE:
+				draw(hWnd, record, FALSE);
 				break;
 
-			
+
 
 			default:
 				break;
 			}
-			
 		}
-	
 	}
 
+	// 메모리 DC의 내용을 실제 화면에 복사
+
+	BitBlt(cHdc, 0, 0, canvasRT.right, canvasRT.bottom, memDC, 0, 0, SRCCOPY);
+	// 메모리 DC와 비트맵 삭제
+	DeleteObject(hBitmap);
+	DeleteDC(memDC);
 	EndPaint(hWnd, &cPS);
 }
 
@@ -434,14 +447,18 @@ void Function::suspendReplay()
 	SuspendThread(threadHandle);
 	px2 = px;
 	py2 = py;
+	//MessageBox(hWnd, L"suspend", L"dd", MB_OK);
 }
 
 void Function::resumeReplay()
-{	
+{
 	setIsReset(false);
 	setIsReplay(true);
 	ResumeThread(threadHandle);
 	isLeftClick = true;
+	x = px2;
+	y = py2;
+	//MessageBox(hWnd, L"resume", L"dd", MB_OK);
 }
 
 void Function::stopReplay(HWND hWnd)
@@ -453,9 +470,16 @@ void Function::stopReplay(HWND hWnd)
 	{
 		replayThreadHandle.join();
 	}
+	//MessageBox(hWnd, L"stop", L"dd", MB_OK);
 }
 
+void Function::setisLeftClick(bool click) {
+	this->isLeftClick = click;
+}
 
+bool Function::getisLeftClick() {
+	return isLeftClick;
+}
 
 // 벡터가 비어있는지 검사
 bool Function::getDrawLInfoEmpty()
